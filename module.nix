@@ -30,25 +30,20 @@ in
       type = types.nullOr types.path;
       default = null;
       description = ''
-        Path to a file containing credentials.
-        The file format must be: `<Student ID> <Password>`
-        (Separated by a space).
-        
-        Example file content:
-        23371263 MySuperSecretPassword
+        Path to a file containing credentials (format: `<ID> <PWD>`).
       '';
     };
 
     stuid = mkOption {
       type = types.nullOr types.str;
-      description = "Student ID for login.";
-      example = "23371263";
+      default = null;
+      description = "Student ID.";
     };
 
     stupwd = mkOption {
       type = types.nullOr types.str;
       default = null;
-      description = "Password (fallback if configFile is not set). UNSAFE: Store in world-readable store.";
+      description = "Password.";
     };
   };
 
@@ -56,7 +51,7 @@ in
     assertions = [
       {
         assertion = (cfg.configFile != null) || (cfg.stuid != null && cfg.stupwd != null);
-        message = "services.buaa-login: You must set either 'configFile' (recommended) or both 'stuid' and 'stupwd'.";
+        message = "services.buaa-login: Set 'configFile' or both 'stuid' and 'stupwd'.";
       }
     ];
 
@@ -66,12 +61,13 @@ in
       wants = [ "network-online.target" ];
       wantedBy = if cfg.interval == null then [ "multi-user.target" ] else [];
 
-      startLimitIntervalSec = 0;
+      startLimitIntervalSec = 60;
+      startLimitBurst = 5;
 
       serviceConfig = {
         Type = "oneshot";
-        Restart = if cfg.interval != null then "no" else "on-failure";
-        RestartSec = "10s";
+        Restart = "on-failure";
+        RestartSec = "5s";
         User = "root";  
         
         ExecStart = pkgs.writeShellScript "buaa-login-start" ''
@@ -92,12 +88,12 @@ in
              exit 1
           fi
 
-          exec ${cfg.package}/bin/buaa-login -i "$USER_ID" -p "$USER_PWD"
+          exec ${cfg.package}/bin/buaa-login -i "$USER_ID" -p "$USER_PWD" -r 0
         '';
       };
 
       systemd.timers.buaa-login = mkIf (cfg.interval != null) {
-        description = "Periodic Timer for BUAA Campus Network Login";
+        description = "Periodic Timer for BUAA Login";
         wantedBy = [ "timers.target" ];
         timerConfig = {
           OnBootSec = "1m";

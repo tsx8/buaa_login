@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/tsx8/buaa-login/pkg/login"
@@ -14,10 +15,12 @@ var Version = "dev"
 
 func main() {
 	var id, pwd string
+	var maxRetry int
 	var showVer bool
 
 	flag.StringVar(&id, "i", "", "Student ID")
 	flag.StringVar(&pwd, "p", "", "Password")
+	flag.IntVar(&maxRetry, "r", 0, "Max retry times (default 0)")
 	flag.BoolVar(&showVer, "v", false, "Show version")
 	flag.Parse()
 
@@ -31,34 +34,33 @@ func main() {
 		os.Exit(1)
 	}
 
+	id = strings.ToLower(strings.TrimSpace(id))
+
 	client := login.New(id, pwd)
-	
-	success, res, err := client.Run()
-	
-	if err != nil {
-		log.Printf("Login error: %v, Response: %v", err, res)
-		os.Exit(1)
-	}
 
-	if success {
-		fmt.Println("Login successful!")
-		printRes(res)
-		return
-	}
+	totalAttempts := 1 + maxRetry
+	
+	for i := range totalAttempts {
+		if i > 0 {
+			fmt.Printf("Retry attempt %d/%d after 2 seconds...\n", i, maxRetry)
+			time.Sleep(2 * time.Second)
+		}
 
-	fmt.Println("Login failed, retrying...")
-	for i := range 10 {
-		time.Sleep(1 * time.Second)
-		success, res, _ = client.Run()
-		if success {
-			fmt.Printf("Login successful on retry %d!\n", i+1)
+		success, res, err := client.Run()
+		
+		if err != nil {
+			log.Printf("Attempt %d error: %v", i+1, err)
+		} else if success {
 			printRes(res)
-			return
+			fmt.Println("Login successful!")
+			os.Exit(0)
+		} else {
+			printRes(res)
+			log.Printf("Login failed (Server returned failure).")
 		}
 	}
 
-	fmt.Println("After 10 retries, login failed.")
-	printRes(res)
+	fmt.Println("All attempts failed.")
 	os.Exit(1)
 }
 

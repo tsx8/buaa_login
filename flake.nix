@@ -16,7 +16,7 @@
         let pkgs = nixpkgsFor system; in {
           default = pkgs.buildGoModule {
             pname = "buaa-login";
-            version = "1.0.0";
+            version = "1.1.0";
             src = ./.;
             vendorHash = null;
             subPackages = [ "cmd/buaa-login" ];
