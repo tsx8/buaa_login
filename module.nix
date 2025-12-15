@@ -100,7 +100,8 @@ in
       description = "Periodic Timer for BUAA Login";
       wantedBy = [ "timers.target" ];
       timerConfig = {
-        OnBootSec = "1m";
+        OnBootSec = "1s";
+        AccuracySec = "1s";
         OnUnitActiveSec = cfg.interval;
         Unit = "buaa-login.service";
       };
