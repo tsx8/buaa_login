@@ -65,7 +65,7 @@ in
       startLimitBurst = 5;
 
       serviceConfig = {
-        Type = "oneshot";
+        Type = "simple";
         Restart = "on-failure";
         RestartSec = "5s";
         User = "root";  
