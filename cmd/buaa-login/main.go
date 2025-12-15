@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -25,7 +26,7 @@ func main() {
 	flag.Parse()
 
 	if showVer {
-        fmt.Printf("buaa-login version: %s\n", Version)
+        fmt.Printf("buaa-login version: %s\n", getVersion())
         return
     }
 
@@ -35,9 +36,7 @@ func main() {
 	}
 
 	id = strings.ToLower(strings.TrimSpace(id))
-
 	client := login.New(id, pwd)
-
 	totalAttempts := 1 + maxRetry
 	
 	for i := range totalAttempts {
@@ -62,6 +61,19 @@ func main() {
 
 	fmt.Println("All attempts failed.")
 	os.Exit(1)
+}
+
+func getVersion() string {
+	if Version != "dev" {
+		return Version
+	}
+
+	info, ok := debug.ReadBuildInfo()
+	if ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
+		return info.Main.Version
+	}
+
+	return Version
 }
 
 func printRes(res map[string]any) {
