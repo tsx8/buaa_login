@@ -12,7 +12,12 @@ in
     package = mkOption {
       type = types.package;
       default = pkgs.buaa-login;
-      description = "The buaa-login package to use.";
+      description = ''
+        The buaa-login package to use.
+        if encountered with nixos-rebuild switch failed problem, 
+        set `systemd.services.buaa-login.restartIfChanged = false;`
+        to let it not restart during switching.
+      '';
     };
 
     interval = mkOption {
@@ -65,7 +70,7 @@ in
       startLimitBurst = 5;
 
       serviceConfig = {
-        Type = "simple";
+        Type = "oneshot";
         Restart = "on-failure";
         RestartSec = "5s";
         User = "root";  
