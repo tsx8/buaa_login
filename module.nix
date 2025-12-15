@@ -14,9 +14,6 @@ in
       default = pkgs.buaa-login;
       description = ''
         The buaa-login package to use.
-        if encountered with nixos-rebuild switch failed problem, 
-        set `systemd.services.buaa-login.restartIfChanged = false;`
-        to let it not restart during switching.
       '';
     };
 
@@ -68,6 +65,8 @@ in
 
       startLimitIntervalSec = 60;
       startLimitBurst = 5;
+
+      restartIfChanged = false;
 
       serviceConfig = {
         Type = "oneshot";
