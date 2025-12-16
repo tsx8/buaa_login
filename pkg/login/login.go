@@ -1,6 +1,7 @@
 package login
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -31,6 +32,9 @@ func New(id, pwd string) *Client {
 		Client: &http.Client{
 			Timeout: 10 * time.Second,
 			Jar:     jar,
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
 		},
 		Header: http.Header{
 			"User-Agent": []string{"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0"},
@@ -65,13 +69,13 @@ func (c *Client) Run() (bool, map[string]interface{}, error) {
 	if len(acidMatch) >= 2 {
 		acid = string(acidMatch[1])
 	} else {
-		acid = "1" // 如果提取失败，回退到默认值
+		acid = "1"
 	}
 
 	timestamp := fmt.Sprintf("%d", time.Now().UnixMilli())
 
 	params := url.Values{}
-	params.Set("callback", "jQuery112401316671457983556_"+timestamp)
+	params.Set("callback", "jQuery")
 	params.Set("username", c.ID)
 	params.Set("ip", ip)
 	params.Set("_", timestamp)
@@ -99,7 +103,7 @@ func (c *Client) Run() (bool, map[string]interface{}, error) {
 		"password": c.Pwd,
 		"ip":       ip,
 		"acid":     acid,
-		"enc_var":  "srun_bx1",
+		"enc_ver":  "srun_bx1",
 	}
 	infoBytes, _ := json.Marshal(infoData)
 	infoStr := string(infoBytes)
@@ -111,7 +115,7 @@ func (c *Client) Run() (bool, map[string]interface{}, error) {
 	chksum := srun.GetSHA1(chkstr)
 
 	loginParams := url.Values{}
-	loginParams.Set("callback", "jQuery112401316671457983556_"+timestamp)
+	loginParams.Set("callback", "jQuery")
 	loginParams.Set("action", "login")
 	loginParams.Set("username", c.ID)
 	loginParams.Set("password", "{MD5}"+md5Pwd)
@@ -124,7 +128,7 @@ func (c *Client) Run() (bool, map[string]interface{}, error) {
 	loginParams.Set("os", "windows+10")
 	loginParams.Set("name", "windows")
 	loginParams.Set("double_stack", "0")
-	loginParams.Set("_", timestamp)
+	loginParams.Set("_", fmt.Sprintf("%d", time.Now().UnixMilli()))
 
 	reqLogin, _ := http.NewRequest("GET", c.BaseURL+"/cgi-bin/srun_portal", nil)
 	reqLogin.URL.RawQuery = loginParams.Encode()
