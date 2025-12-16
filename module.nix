@@ -28,9 +28,8 @@ in
       '';
     };
 
-    wakeUp = {
-      enable = mkEnableOption "Run login check on wake up from sleep/suspend";
-      default = true; 
+    wakeUp = mkEnableOption "Run login check on wake up from sleep/suspend" // {
+      default = true;
     };
 
     retry = mkOption {
@@ -75,7 +74,7 @@ in
       wantedBy = 
         let
           bootTargets = if cfg.interval == null then [ "multi-user.target" ] else [];
-          wakeUpTargets = mkIf cfg.wakeUp.enable [ "sleep.target" ];
+          wakeUpTargets = mkIf cfg.wakeUp [ "sleep.target" ];
         in
           bootTargets ++ wakeUpTargets;
 
