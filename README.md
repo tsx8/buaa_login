@@ -10,9 +10,10 @@
 ## ✨ 功能特性
 
 *   **跨平台支持**：支持 Windows, Linux (amd64/arm64), macOS。
-*   **自动重试**：内置网络抖动处理，登录失败会自动重试 10 次。
-*   **SRun 算法支持**：完整实现了校园网认证所需的复杂加密算法（MD5, SHA1, Base64, XEncode）。
-*   **NixOS 友好**：提供 Flake 和 NixOS Module，支持开机自动登录服务。
+*   **可配置重试**：支持通过 `-r` 参数自定义重试次数，内置 2 秒重试间隔。
+*   **SRun 算法支持**：完整实现了校园网认证所需的复杂加密算法（HMAC-MD5, SHA1, 自定义 Base64, XEncode/TEA）。
+*   **NixOS 友好**：提供 Flake 和 NixOS Module，支持开机自动登录、定时检查和唤醒后自动登录。
+*   **稳定可靠**：10 秒超时设置，Cookie 持久化，完善的错误处理。
 
 ## 🚀 快速开始
 
@@ -21,10 +22,23 @@
 下载对应系统的二进制文件或自行编译后，使用以下命令登录：
 
 ```bash
+# 基本登录
 ./buaa-login -i <学号> -p <密码>
 
+# 登录并在失败时重试 3 次
+./buaa-login -i <学号> -p <密码> -r 3
+
+# 显示版本
 ./buaa-login -v
 ```
+
+**参数说明：**
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `-i` | 学号 | 必填 |
+| `-p` | 密码 | 必填 |
+| `-r` | 最大重试次数 | 0 |
+| `-v` | 显示版本号 | - |
 
 **示例：**
 ```bash
@@ -81,7 +95,31 @@ inputs = {
 }
 ```
 
-*警告：这将导致密码明文存储在世界可读的 Nix Store 中。*
+### 3. 配置选项
+
+| 选项 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `enable` | bool | `false` | 是否启用服务 |
+| `configFile` | path | `null` | 凭据文件路径（格式：`<学号> <密码>`） |
+| `stuid` | string | `null` | 学号（与 `stupwd` 配合使用） |
+| `stupwd` | string | `null` | 密码（与 `stuid` 配合使用） |
+| `retry` | int | `3` | 登录失败最大重试次数 |
+| `interval` | string | `null` | 定时检查间隔（如 `"15min"`、`"1h"`），设置后启用定时器模式 |
+| `wakeUp` | bool | `true` | 从睡眠/挂起唤醒后自动执行登录检查 |
+
+### 4. 使用示例
+
+#### 基础配置（使用凭据文件）
+```nix
+services.buaa-login = {
+  enable = true;
+  configFile = "/etc/nixos/buaa-cred.txt"; 
+};
+```
+
+#### 直接配置账号密码
+
+*⚠️ 警告：这将导致密码明文存储在世界可读的 Nix Store 中。*
 
 ```nix
 services.buaa-login = {
@@ -91,8 +129,29 @@ services.buaa-login = {
 };
 ```
 
+#### 定时检查模式（每 15 分钟检查一次）
+```nix
+services.buaa-login = {
+  enable = true;
+  configFile = "/etc/nixos/buaa-cred.txt";
+  interval = "15min";  # 每 15 分钟检查一次
+  retry = 5;           # 失败时重试 5 次
+};
+```
+
+#### 禁用唤醒后自动登录
+```nix
+services.buaa-login = {
+  enable = true;
+  configFile = "/etc/nixos/buaa-cred.txt";
+  wakeUp = false;
+};
+```
+
 ### 服务说明
-启用后，系统会在 `network-online.target` 达成后自动尝试登录，并在失败时自动重启服务。
+- **默认模式**（`interval = null`）：服务在 `network-online.target` 达成后自动尝试登录，失败时自动重启服务（5 秒间隔，60 秒内最多 5 次）。
+- **定时器模式**（设置 `interval`）：通过 systemd timer 定期触发登录检查，适合网络不稳定的环境。
+- **唤醒触发**：默认在从睡眠/挂起唤醒后自动执行登录检查。
 
 ---
 
