@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
@@ -69,14 +74,17 @@ in
 
     systemd.services.buaa-login = {
       description = "BUAA Campus Network Auto Login";
-      after = [ "network-online.target" "sleep.target" ];
+      after = [
+        "network-online.target"
+        "sleep.target"
+      ];
       wants = [ "network-online.target" ];
-      wantedBy = 
+      wantedBy =
         let
-          bootTargets = if cfg.interval == null then [ "multi-user.target" ] else [];
-          wakeUpTargets = if cfg.wakeUp then [ "sleep.target" ] else [];
+          bootTargets = if cfg.interval == null then [ "multi-user.target" ] else [ ];
+          wakeUpTargets = if cfg.wakeUp then [ "sleep.target" ] else [ ];
         in
-          bootTargets ++ wakeUpTargets;
+        bootTargets ++ wakeUpTargets;
 
       startLimitIntervalSec = 60;
       startLimitBurst = 5;
@@ -87,8 +95,8 @@ in
         Type = "oneshot";
         Restart = "on-failure";
         RestartSec = "5s";
-        User = "root";  
-        
+        User = "root";
+
         ExecStart = pkgs.writeShellScript "buaa-login-start" ''
           if [ -n "${toString cfg.configFile}" ]; then
             if [ -f "${toString cfg.configFile}" ]; then
@@ -103,8 +111,8 @@ in
           fi
 
           if [ -z "$USER_ID" ] || [ -z "$USER_PWD" ]; then
-             echo "Error: ID or Password is empty."
-             exit 1
+            echo "Error: ID or Password is empty."
+            exit 1
           fi
 
           exec ${cfg.package}/bin/buaa-login -i "$USER_ID" -p "$USER_PWD" -r ${toString cfg.retry}

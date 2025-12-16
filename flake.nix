@@ -5,25 +5,41 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
-  outputs = { self, nixpkgs }:
+  outputs =
+    { self, nixpkgs }:
     let
-      supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+      supportedSystems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ];
+      linuxSystems = [
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
+      forLinuxSystems = nixpkgs.lib.genAttrs linuxSystems;
       nixpkgsFor = system: nixpkgs.legacyPackages.${system};
       version = nixpkgs.lib.strings.fileContents ./VERSION;
     in
     {
-      packages = forAllSystems (system:
-        let pkgs = nixpkgsFor system; in {
+      packages = forAllSystems (
+        system:
+        let
+          pkgs = nixpkgsFor system;
+        in
+        {
           default = pkgs.buildGoModule {
             pname = "buaa-login";
             inherit version;
             src = ./.;
             vendorHash = null;
             subPackages = [ "cmd/buaa-login" ];
-            ldflags = [ 
-              "-s" "-w" 
-              "-X main.Version=v${version}" 
+            ldflags = [
+              "-s"
+              "-w"
+              "-X main.Version=v${version}"
             ];
             meta = with pkgs.lib; {
               description = "BUAA Campus Network Login Tool";
@@ -31,14 +47,22 @@
               mainProgram = "buaa-login";
             };
           };
-        });
+        }
+      );
 
-      nixosModules.default = { config, lib, pkgs, ... }: 
+      nixosModules.default =
+        {
+          config,
+          lib,
+          pkgs,
+          ...
+        }:
         let
           overlay = final: prev: {
             buaa-login = self.packages.${prev.system}.default;
           };
-        in {
+        in
+        {
           nixpkgs.overlays = [ overlay ];
           imports = [ ./module.nix ];
         };
