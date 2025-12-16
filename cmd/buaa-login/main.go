@@ -49,13 +49,20 @@ func main() {
 
 		if err != nil {
 			log.Printf("Attempt %d error: %v", i+1, err)
-		} else if success {
+			continue
+		}
+
+		if success {
 			printRes(res)
 			fmt.Println("Login successful!")
 			os.Exit(0)
+		}
+
+		printRes(res)
+		if errMsg, ok := res["error"].(string); ok {
+			log.Printf("Login failed: %s", errMsg)
 		} else {
-			printRes(res)
-			log.Printf("Login failed (Server returned failure).")
+			log.Printf("Login failed (unknown error)")
 		}
 	}
 
