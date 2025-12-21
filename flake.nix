@@ -50,7 +50,7 @@
         }
       );
 
-      nixosModules.default =
+      nixosModules.buaa-login =
         {
           config,
           lib,
